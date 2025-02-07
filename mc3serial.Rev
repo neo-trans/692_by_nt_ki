@@ -30,24 +30,24 @@ mymc3 = mcmcmc(
 )
 print("  - Created MCMCMC object")
 
-checkFreq = 100
+checkFreq = 50
 
-# Ignore checkpoints for the time being as they crash RevBayes-mpi
-# e.g. https://github.com/revbayes/revbayes/issues/184
-#if (fileExists("692_by_nt_ki_run_1_chain_0.ckp")) {
-#  print("  - Initializing from checkpoint")
-#  mymc3.initializeFromCheckpoint(ckpFile)
-#} else {
-  mymc3.burnin(generations = 3000, tuningInterval = checkFreq * 3)
-#}
+if (fileExists("692_by_nt_ki_run_1_chain_0.ckp")) {
+  print("  - Initializing from checkpoint")
+  mymc3.initializeFromCheckpoint(ckpFile)
+  runHours = 2
+} else {
+  mymc3.burnin(generations = checkFreq * 30, tuningInterval = checkFreq * 3)
+  runHours = 71
+}
 
-stopping_rules[1] = srMaxTime(71, "hours")
+stopping_rules[1] = srMaxTime(runHours, "hours")
 stopping_rules[2] = srMinESS(minEss, paramFile, checkFreq)
 # PSRF requires RevBayes 1.2.5
 stopping_rules[3] = srGelmanRubin(maxPSRF, paramFile, checkFreq)
 
-print("  - Commencing MCMCMC run at", time("year"), time("day"), time("seconds"))
-print("    Terminate when ESS =", minESS, "or PSRF <", maxPSRF)
+print("  - Commencing MCMCMC run at", time("year"), time("day"), time("seconds") / 60 / 60)
+print("    Run until ESS >", minESS, "or for", runHours, "hours")
 mymc3.run(rules = stopping_rules, checkpointFile = ckpFile, checkpointInterval = checkFreq)
 
 print("  # # # RUN COMPLETE # # #  ")
