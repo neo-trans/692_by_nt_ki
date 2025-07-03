@@ -35,7 +35,7 @@ checkFreq = 100
 if (fileExists("692_by_nt_ki_run_1_chain_0.ckp")) {
   print("   Initializing from checkpoint")
   mymc3.initializeFromCheckpoint(ckpFile)
-  runHours = 12
+  runHours = 18
 } else {
   mymc3.burnin(generations = 1200, tuningInterval = checkFreq * 3)
   runHours = 71
