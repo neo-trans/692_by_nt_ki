@@ -1,0 +1,46 @@
+print("Timestamp:", time("year"), time("day"), time("seconds") / 60 / 60)
+seed(0)
+
+neo <- readDiscreteCharacterData("project692.neo.nex")
+trans <- readDiscreteCharacterData("project692.trans.nex")
+logFile = "692_by_nt_ki.log"
+timingFile = "692_by_nt_ki.time.log"
+paramFile = "692_by_nt_ki.p.log"
+treeFile = "692_by_nt_ki.trees"
+ckpFile = "692_by_nt_ki.ckp"
+source("by_nt_ki.Rev")
+
+monitors.append( mnModel(filename = logFile, printgen = 36) )
+monitors.append( mnModel(filename = paramFile, printgen = 6, stochasticOnly = TRUE, exclude = ["rel_br_lengths"]) )
+monitors.append( mnFile(filename = treeFile, printgen = 12, phylogeny) )
+
+mymc3 = mcmcmc(
+  mymodel, monitors, moves,
+  nruns = 2,
+  nchains = 8,
+  tuneHeat = TRUE,
+  swapMethod = "both",
+  swapMode = "multiple",
+  combine = "none"
+)
+print("   Created MCMCMC object")
+
+checkFreq = 100
+
+if (fileExists("692_by_nt_ki_run_1_chain_0.ckp")) {
+  print("   Initializing from checkpoint")
+  mymc3.initializeFromCheckpoint(ckpFile)
+} else {
+  print("   No checkpoint found; aborting timed run")
+  q()
+}
+
+print("   Commencing MCMCMC run at",
+      time("year"), time("day"), time("seconds") / 60 / 60)
+write(time("fromBeginning"), timingFile, append = FALSE)
+mymc3.run(generations = 144, checkpointFile = ckpFile, checkpointInterval = checkFreq, verbose = 0)
+write(time("fromBeginning"), timingFile, append = TRUE)
+
+print("  # # # RUN COMPLETE # # #  ")
+print("Timestamp:", time("year"), time("day"), time("seconds") / 60 / 60)
+q()
