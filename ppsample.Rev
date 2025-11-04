@@ -1,28 +1,22 @@
 print("Timestamp:", time("year"), time("day"), time("seconds") / 60 / 60)
 seed(0)
-if (args.size() == 0) {
-  minEss = 333
-} else {
-  minEss = args[1]
-}
-maxPSRF = 1.01
 
 neo <- readDiscreteCharacterData("project692.neo.nex")
 trans <- readDiscreteCharacterData("project692.trans.nex")
 pid = "692"
 script = "by_nt_ki"
 scriptBase = pid + "_" + script
-ckpFile = scriptBase + ".ckp"
 paramFile = scriptBase + ".p.log"
-
+ckpFile = scriptBase + ".ckp"
 source(script + ".Rev")
-checkFreq = 100
 
 monitors.append( mnModel(filename = scriptBase + ".log", printgen = 36) )
 monitors.append( mnModel(filename = paramFile, printgen = 6,
                          stochasticOnly = TRUE, exclude = ["rel_br_lengths"]) )
 monitors.append( mnFile(filename = scriptBase + ".trees", printgen = 12,
                         phylogeny) )
+monitors.append( mnStochasticVariable(filename = scriptBase + ".var",
+                                      printgen = 1) )
 
 mymc3 = mcmcmc(
   mymodel, monitors, moves,
@@ -35,23 +29,28 @@ mymc3 = mcmcmc(
 )
 print("   Created MCMCMC object")
 
+checkFreq = 100
 
-if (fileExists("692_by_nt_ki_run_1_chain_0.ckp")) {
+if (fileExists(scriptBase + "_run_1_chain_0.ckp")) {
   print("   Initializing from checkpoint")
   mymc3.initializeFromCheckpoint(ckpFile)
   runHours = 71
 } else {
-  mymc3.burnin(generations = 1200, tuningInterval = checkFreq * 3)
-  runHours = 71
+  print("   This script appends to an existing run, but no checkpoint was found.")
+  q()
 }
 
+pTrace = readTrace(scriptBase + "_run_1.treep")
+gensVec = pTrace[1].getValues()
+gensIn = gensVec[gensVec.size()]
+gensTarget = gensIn + 600
+
 stopping_rules[1] = srMaxTime(runHours, "hours")
-stopping_rules[2] = srMinESS(minEss, paramFile, checkFreq, "ESS")
-stopping_rules[3] = srGelmanRubin(maxPSRF, paramFile, checkFreq)
 
 print("   Commencing MCMCMC run at",
       time("year"), time("day"), time("seconds") / 60 / 60)
-mymc3.run(rules = stopping_rules, checkpointFile = ckpFile, checkpointInterval = checkFreq, verbose = 1)
+mymc3.run(rules = stopping_rules, checkpointFile = ckpFile,
+          checkpointInterval = checkFreq, verbose = 1, generations = gensTarget)
 
 print("  # # # RUN COMPLETE # # #  ")
 print("Timestamp:", time("year"), time("day"), time("seconds") / 60 / 60)
